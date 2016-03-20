@@ -179,7 +179,7 @@ public class Worker {
         if (currentWorkers == null){
         	// Initialize workers
         	currentWorkers = newWorkers;
-            logger.info("Initial list of children: " + newWorkers.toString());
+            logger.info("Got a list of children: " + newWorkers.toString());
         } else {
         	handleWorkerDeath(newWorkers);
         }

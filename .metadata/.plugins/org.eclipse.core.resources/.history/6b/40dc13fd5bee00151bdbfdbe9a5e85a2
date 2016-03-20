@@ -176,11 +176,12 @@ public class Worker {
 	
 	private static void watchWorkers(){
         List<String> newWorkers = zkc.getChildren(workerPath, workerWatcher);
+        logger.info("Got a list of children: " + newWorkers.toString());
         if (currentWorkers == null){
         	// Initialize workers
         	currentWorkers = newWorkers;
-            logger.info("Initial list of children: " + newWorkers.toString());
         } else {
+        	logger.info("Children were added or deleted from " + workerPath);
         	handleWorkerDeath(newWorkers);
         }
 	}

@@ -176,11 +176,12 @@ public class Worker {
 	
 	private static void watchWorkers(){
         List<String> newWorkers = zkc.getChildren(workerPath, workerWatcher);
+        logger.info("Got a list of children: " + newWorkers.toString());
         if (currentWorkers == null){
         	// Initialize workers
         	currentWorkers = newWorkers;
-            logger.info("Initial list of children: " + newWorkers.toString());
         } else {
+        	logger.info("Children were added or deleted from " + workerPath);
         	handleWorkerDeath(newWorkers);
         }
 	}
@@ -224,6 +225,7 @@ public class Worker {
                 
         if(path.equalsIgnoreCase(workerPath)) {
             if (type == EventType.NodeChildrenChanged) {
+            	logger.warning("Worker node died or created");
                 watchWorkers();
             }else{
             	logger.info("Something unexpected happened to node " + workerPath + ", exiting");

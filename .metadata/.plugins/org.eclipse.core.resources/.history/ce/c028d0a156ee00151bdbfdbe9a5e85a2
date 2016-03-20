@@ -55,13 +55,13 @@ public class Worker {
             @Override
             public void process(WatchedEvent event) {
                 workerHandler(event);
+        
             }
         };
         watchWorkers();
         
         // Register self on zookeeper
-        myPath = zkc.createWorker(workerPath + "/worker");
-        logger.info("This work's path is " + myPath);
+        myPath = zkc.createWorker(workerPath);
         
         while(true){
 	        // now all we have to do is to actually dictionary attack it
@@ -137,15 +137,7 @@ public class Worker {
 		 */
 		while (true){
 			List<String> tasks = zkc.getChildren(jobPath, null);
-			if (tasks == null){
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					System.exit(-1);
-				}
-				continue;
-			}
+			
 			for (String task: tasks){
 				// assemble full path
 				String taskPath = jobPath + "/" + task;
@@ -163,7 +155,7 @@ public class Worker {
 					}
 				}
 			}
-			logger.info("Unable to find any available task, sleeping for 5s and trying again");
+			// logger.info("Unable to find any available task, sleeping for 5s and trying again");
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -179,8 +171,8 @@ public class Worker {
         if (currentWorkers == null){
         	// Initialize workers
         	currentWorkers = newWorkers;
-            logger.info("Initial list of children: " + newWorkers.toString());
         } else {
+        	logger.info("Children were added or deleted from " + workerPath);
         	handleWorkerDeath(newWorkers);
         }
 	}
@@ -191,25 +183,21 @@ public class Worker {
 		List<String> tasks = zkc.getChildren(jobPath, null);
 		
 		for(String task: tasks){
-			// clean up all tasks belonging to this worker
-			
+			// clean up all tasks that were started
 			Stat taskStat = new Stat();		
 			byte[] taskWorker = zkc.getData(task, taskStat);
 			int taskVersion = taskStat.getVersion();
 			
 			if (taskWorker != null && taskWorker.equals(worker)){
-				logger.info("Setting task " + task + " to CREATED (test_and_set)");
 				zkc.setData(task, "CREATED".getBytes(), taskVersion);
 			}
 		}
 	}
 	
 	private static void handleWorkerDeath(List<String> newWorkers){
-		logger.info("Current workers: " + currentWorkers + ", new workers: " + newWorkers);
 		for (String worker: currentWorkers){
-			if (!newWorkers.contains(worker)){
+			if (!currentWorkers.contains(worker)){
 				// previousWorker died (probably0
-				logger.warning("Worker " + worker + " has died, cleaning up its tasks");
 				cleanUnfinishedTasks(worker);
 			}
 		}
@@ -221,9 +209,12 @@ public class Worker {
 	private static void workerHandler(WatchedEvent event){
         String path = event.getPath();
         EventType type = event.getType();
-                
+        
+        logger.warning("Worker " + path + " has died, event " + type.toString() + " is caught");
+        
         if(path.equalsIgnoreCase(workerPath)) {
             if (type == EventType.NodeChildrenChanged) {
+            	logger.warning("Worker node died / created");
                 watchWorkers();
             }else{
             	logger.info("Something unexpected happened to node " + workerPath + ", exiting");

@@ -61,7 +61,6 @@ public class Worker {
         
         // Register self on zookeeper
         myPath = zkc.createWorker(workerPath + "/worker");
-        logger.info("This work's path is " + myPath);
         
         while(true){
 	        // now all we have to do is to actually dictionary attack it
@@ -141,6 +140,7 @@ public class Worker {
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 					System.exit(-1);
 				}
@@ -163,7 +163,7 @@ public class Worker {
 					}
 				}
 			}
-			logger.info("Unable to find any available task, sleeping for 5s and trying again");
+			// logger.info("Unable to find any available task, sleeping for 5s and trying again");
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -176,11 +176,12 @@ public class Worker {
 	
 	private static void watchWorkers(){
         List<String> newWorkers = zkc.getChildren(workerPath, workerWatcher);
+        logger.info("Got a list of children: " + newWorkers.toString());
         if (currentWorkers == null){
         	// Initialize workers
         	currentWorkers = newWorkers;
-            logger.info("Initial list of children: " + newWorkers.toString());
         } else {
+        	logger.info("Children were added or deleted from " + workerPath);
         	handleWorkerDeath(newWorkers);
         }
 	}
@@ -221,9 +222,12 @@ public class Worker {
 	private static void workerHandler(WatchedEvent event){
         String path = event.getPath();
         EventType type = event.getType();
-                
+        
+        logger.warning("Worker " + path + " has died, event " + type.toString() + " is caught");
+        
         if(path.equalsIgnoreCase(workerPath)) {
             if (type == EventType.NodeChildrenChanged) {
+            	logger.warning("Worker node died or created");
                 watchWorkers();
             }else{
             	logger.info("Something unexpected happened to node " + workerPath + ", exiting");
