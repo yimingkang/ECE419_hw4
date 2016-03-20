@@ -12,6 +12,11 @@ import org.apache.zookeeper.ZooKeeper;
 
 public class ClientDriver extends PBArchitectureAdaptor{
 	public static Logger logger;
+    public static ZooKeeper zk;
+    public static ZkConnector zkc;
+    public static String jobTrackerPath = "/JobTracker";
+    public static int jobTrackerPort = -1;
+    public static Watcher jobTrackerWatcher;
     
     public static void main(String[] args){
         if (args.length != 3) {
@@ -20,9 +25,19 @@ public class ClientDriver extends PBArchitectureAdaptor{
         }
         
         pbPath = "/JobTracker";
-        logger = Logger.getLogger(JobTracker.class.getName());
-
-        connectZKAndSetupPB(args[0]);
+        
+        // connect to zookeeper
+        zkConnect(args[0]);
+        
+        jobTrackerWatcher = new Watcher() { // Anonymous Watcher
+            @Override
+            public void process(WatchedEvent event) {
+                trackerHandler(event);
+            }
+        };
+        
+        // get job tracker port
+        getJobTrackerPort();
         
         while (true){
         	logger.info("Attempting to submit job " + args[2]);
@@ -32,7 +47,7 @@ public class ClientDriver extends PBArchitectureAdaptor{
 				return;
 			} catch (ClassNotFoundException | IOException e) {
 				logger.info("Unable to send/receive packet -- retrying");
-				getPBPort();
+				getJobTrackerPort();
 			}
         }
     }

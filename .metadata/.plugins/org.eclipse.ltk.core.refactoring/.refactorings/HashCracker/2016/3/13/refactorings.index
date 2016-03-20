@@ -1,1 +1,5 @@
 1458456977294	Rename field 'jobPath'
+1458477906643	Rename field 'jobTrackerPath'
+1458477929198	Rename field 'jobTrackerPort'
+1458477943196	Rename field 'jobTrackerWatcher'
+1458478177237	Rename method 'getJobTrackerPort'

@@ -61,8 +61,6 @@ public class FileServer extends PBArchitecture {
 	
 	        	MPacket offerPacket = (MPacket) reader.readObject();
 	        	int partition = offerPacket.partitionID;
-	        	logger.info("Worker requesting partitionID: " + partition);
-	        	
 	        	offerPacket.givePartition(getPartition(partition));
 	        	
 	        	// send user response
@@ -76,7 +74,8 @@ public class FileServer extends PBArchitecture {
         		continue;
         	}
         }
-        //TODO: Wait for connection and send over the chunk   
+        //TODO: Wait for connection and send over the chunk
+        
     }
     
     static List<String> getPartition(int partitionID){

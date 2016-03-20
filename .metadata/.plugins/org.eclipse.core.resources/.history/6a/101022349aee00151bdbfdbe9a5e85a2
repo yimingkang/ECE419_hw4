@@ -22,7 +22,7 @@ public class ClientDriver extends PBArchitectureAdaptor{
         pbPath = "/JobTracker";
         logger = Logger.getLogger(JobTracker.class.getName());
 
-        connectZKAndSetupPB(args[0]);
+        init(args[0]);
         
         while (true){
         	logger.info("Attempting to submit job " + args[2]);
@@ -32,7 +32,7 @@ public class ClientDriver extends PBArchitectureAdaptor{
 				return;
 			} catch (ClassNotFoundException | IOException e) {
 				logger.info("Unable to send/receive packet -- retrying");
-				getPBPort();
+				getJobTrackerPort();
 			}
         }
     }
