@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>HashCracker</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>src/Test.java</name>
+			<type>1</type>
+			<location>/Users/yimingk/Documents/Year_4_Sem_2/ECE419/labs/ECE419_hw4/tmp/example2/Test.java</location>
+		</link>
+	</linkedResources>
+</projectDescription>
