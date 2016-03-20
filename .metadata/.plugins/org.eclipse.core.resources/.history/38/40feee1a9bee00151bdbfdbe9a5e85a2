@@ -9,6 +9,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -36,14 +37,23 @@ public class Worker extends PBArchitectureAdaptor{
     	// in case base znode is not there, make it
         createBaseZNode();
         
-        // Set a watcher on workers
+        /* 1- Make connection to zookeeper (already done)
+         * 2- Set a Watch for /Workers node to handle worker failure
+         * 3- On worker failure => use setData() on worker's current task to signal that 
+         * 	  we need to re-process this task
+         * 4- Register self on zookeeper 
+         * 5- Loop through all tasks and work on it if it needs to be done (use setData() with version
+         *    number to achieve atomic operation similar to test-and-set)
+         */
+        
+   
+        // Set a watcher on WORKERS
         workerWatcher = new Watcher() { // Anonymous Watcher
             @Override
             public void process(WatchedEvent event) {
                 workerHandler(event);
             }
         };
-        
         watchWorkers();
         
         // Register self on zookeeper
@@ -61,33 +71,35 @@ public class Worker extends PBArchitectureAdaptor{
 	        }
 	        
 	        String target = taskAttr[0];
-	        int partitionID = Integer.parseInt(taskAttr[1]);
-	        List<String> partition = null;
-	        logger.info("Attacking MD5 hash: " + target + " in partionID: " + partitionID);
-
+	        String partitionID = taskAttr[1];
+	        ArrayList<String> partition = null;
+	        
 	        if (MOCK){
 	        	partition = new ArrayList<String>();
 	        	partition.add("ABC");  // Correct
 	        	partition.add("BCD");  // Wrong
 	        	partition.add("CDE");  // Wrong
-	        } else{
-				MPacket response = exchangeMPacket(new MPacket(partitionID));
-				partition = response.partition;
 	        }
-
+	        
+	        // TODO: Fetch dictionary
+	        // partition = getDictionaryPartition(partitionID);
+	        logger.info("Attacking MD5 hash: " + target + " in partionID: " + partitionID);
+	        
 	        // TODO: HULK SMASH
 	        String status = crackMD5(partition, target);
 	        
 	        // Update task
 	        updateTask(task, status);
 	        
-        	logger.info("Cracking again in 5s");
-        	try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	        if(MOCK){
+	        	logger.info("MOCK is on -- sleeping for 5s");
+	        	try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	        }
         }
 	}
 	public static String crackMD5(List<String> partition, String target){

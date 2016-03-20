@@ -38,22 +38,17 @@ public class PBArchitectureAdaptor {
     
     public static MPacket exchangeMPacket(MPacket outBound) {
     	while(true){
-    		try{
-		    	Socket connection = new Socket("localhost", pbPort);
-		    	logger.info("Connected to server!");
-		
-		    	ObjectOutputStream writer = new ObjectOutputStream(connection.getOutputStream());
-		    	ObjectInputStream reader = new ObjectInputStream(connection.getInputStream());
-		    	
-		    	writer.writeObject(outBound);
-		    	MPacket response = (MPacket) reader.readObject();
-		    	connection.close();
-		    	
-		    	return response;
-    		}catch(ClassNotFoundException | IOException e) {
-				logger.info("Unable to send/receive packet -- retrying");
-				getPBPort();
-    		}
+	    	Socket connection = new Socket("localhost", pbPort);
+	    	logger.info("Connected to server!");
+	
+	    	ObjectOutputStream writer = new ObjectOutputStream(connection.getOutputStream());
+	    	ObjectInputStream reader = new ObjectInputStream(connection.getInputStream());
+	    	
+	    	writer.writeObject(outBound);
+	    	MPacket response = (MPacket) reader.readObject();
+	    	connection.close();
+	    	
+	    	return response;
     	}
     }
     

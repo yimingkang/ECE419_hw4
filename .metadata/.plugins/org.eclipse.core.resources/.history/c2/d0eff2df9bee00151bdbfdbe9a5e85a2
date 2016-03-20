@@ -27,7 +27,8 @@ public class ClientDriver extends PBArchitectureAdaptor{
         logger.info("Attempting to submit job " + args[2]);
 		String status = submitJob(args[1], args[2]);
 		logger.info("JOBTRACKER RESPONSE: " + status);
-		return;
+				return;
+	
     }
     
     public static String submitJob(String request, String md5Hash){

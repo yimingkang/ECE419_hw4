@@ -24,13 +24,20 @@ public class ClientDriver extends PBArchitectureAdaptor{
 
         connectZKAndSetupPB(args[0]);
         
-        logger.info("Attempting to submit job " + args[2]);
-		String status = submitJob(args[1], args[2]);
-		logger.info("JOBTRACKER RESPONSE: " + status);
-		return;
+        while (true){
+        	logger.info("Attempting to submit job " + args[2]);
+            try {
+				String status = submitJob(args[1], args[2]);
+				logger.info("JOBTRACKER RESPONSE: " + status);
+				return;
+			} catch (ClassNotFoundException | IOException e) {
+				logger.info("Unable to send/receive packet -- retrying");
+				getPBPort();
+			}
+        }
     }
     
-    public static String submitJob(String request, String md5Hash){
+    public static String submitJob(String request, String md5Hash) throws UnknownHostException, IOException, ClassNotFoundException{
     	boolean isQueryJob = request.equals("status");
     	MPacket response = exchangeMPacket(new MPacket(md5Hash, isQueryJob));
     	return response.status;

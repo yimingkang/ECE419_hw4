@@ -24,10 +24,12 @@ public class ClientDriver extends PBArchitectureAdaptor{
 
         connectZKAndSetupPB(args[0]);
         
-        logger.info("Attempting to submit job " + args[2]);
+        	logger.info("Attempting to submit job " + args[2]);
+
 		String status = submitJob(args[1], args[2]);
-		logger.info("JOBTRACKER RESPONSE: " + status);
-		return;
+				logger.info("JOBTRACKER RESPONSE: " + status);
+				return;
+	
     }
     
     public static String submitJob(String request, String md5Hash){

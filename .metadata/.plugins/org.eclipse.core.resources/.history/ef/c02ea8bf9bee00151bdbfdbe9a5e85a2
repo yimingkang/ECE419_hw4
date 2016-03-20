@@ -50,9 +50,8 @@ public class PBArchitectureAdaptor {
 		    	connection.close();
 		    	
 		    	return response;
-    		}catch(ClassNotFoundException | IOException e) {
-				logger.info("Unable to send/receive packet -- retrying");
-				getPBPort();
+    		}catch(){
+    			
     		}
     	}
     }
