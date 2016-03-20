@@ -44,6 +44,8 @@ public class JobTracker {
 
         zk = zkc.getZooKeeper();
         
+        createBaseZNode();
+        
         try {
             zk.create(
                 myPath,         	   // Path of znode
@@ -134,12 +136,28 @@ public class JobTracker {
         
     }
     
-    public static void createJob(String md5_hash){
+    public static void createBaseZNode(){
+    	// we would like to first create /Jobs node
+		try {
+			zk.create(
+			        jobPath,         	    // Path of znode
+			        null,   // Status is CREATED
+			        Ids.OPEN_ACL_UNSAFE,    // ACL, set to Completely Open.
+			        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL for failure detection
+			);
+			logger.info("Created node " + jobPath);
+		} catch (KeeperException | InterruptedException e) {
+			logger.info("Node " + jobPath + " already exists");
+		}
+    }
+    
+    public static void createJob(String md5Hash){
 		for (int partitionID = 0; partitionID < nPartitions; partitionID++){
 	        try {
 	        	
 	        	// create N jobs under /<jobPath>/<md5_hash>_<partitionID>
-	        	String md5Path = jobPath + "/" + md5_hash + "_" + partitionID;
+	        	String md5Path = jobPath + "/" + md5Hash + "_" + partitionID;
+	        	logger.info("Creating node at " + md5Path);
 				zk.create(
 				        md5Path,         	    // Path of znode
 				        "CREATED".getBytes(),   // Status is CREATED
@@ -147,7 +165,7 @@ public class JobTracker {
 				        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL for failure detection
 				);
 			} catch (NodeExistsException e) {
-				logger.info("Job " + md5_hash + " already exists! -- aborting");
+				logger.info("Job " + md5Hash + " already exists! -- aborting");
 				break;
 			} catch(KeeperException | InterruptedException e){
 				logger.severe("ZooKeeper error: " + e.getMessage());

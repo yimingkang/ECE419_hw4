@@ -142,7 +142,7 @@ public class ZkConnector implements Watcher {
 					path, 
 					null,  
 					Ids.OPEN_ACL_UNSAFE, 
-					CreateMode.PERSISTENT_SEQUENTIAL
+					CreateMode.EPHEMERAL_SEQUENTIAL
 			);
 		} catch (KeeperException e) {
 			return null;
