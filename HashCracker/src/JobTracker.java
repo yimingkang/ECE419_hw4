@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 //import java.util.logging.Level;
@@ -16,110 +17,45 @@ import java.util.logging.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 
-public class JobTracker {
-    
-    public static String myPath = "/JobTracker";
-    public static String jobPath = "/Jobs";
-    public static ZooKeeper zk;
-    public static boolean isPrimary;
-    public static CountDownLatch nodeDeadSignal = new CountDownLatch(1);
-	private static final Logger logger = Logger.getLogger(JobTracker.class.getName());
+public class JobTracker extends PBArchitecture {
+    public static String jobBasePath = "/Jobs";
 	private static int nPartitions = 27;
 	public static boolean MOCK = true;	
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
     	
+        pbPath = "/JobTracker";
+        logger = Logger.getLogger(JobTracker.class.getName());
+    	
         if (args.length != 1) {
             System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. A zkServer:clientPort");
             return;
         }
-
-        ZkConnector zkc = new ZkConnector();
+        // Connect ZooKeeper
+        connectZK(args[0]);
         
-        try {
-            zkc.connect(args[0]);
-        } catch(Exception e) {
-            logger.info("Zookeeper connect "+ e.getMessage());
-        }
-
-        zk = zkc.getZooKeeper();
-        
+        // Create base node
         createBaseZNode();
         
-        try {
-            zk.create(
-                myPath,         	   // Path of znode
-                null,           	   // Data not needed.
-                Ids.OPEN_ACL_UNSAFE,   // ACL, set to Completely Open.
-                CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL for failure detection
-            );
-            isPrimary = true;
-            logger.info("Primary JobTracker started");
-            
-        } catch(NodeExistsException e) {
-        	// here we create a wacher
-        	isPrimary = false;
-            try {
-				zk.exists(
-			        myPath, 
-			        new Watcher() {       // Anonymous Watcher
-			            @Override
-			            public void process(WatchedEvent event) {
-			                // check for event type NodeCreated
-			                boolean isNodeDeleted = event.getType().equals(EventType.NodeDeleted);
-			                
-			                // verify if this is the defined znode
-			                boolean isMyPath = event.getPath().equals(myPath);
-			                if (isNodeDeleted && isMyPath) {
-			                	logger.info("Primary JobTracker has died, taking over as Primary");
-			                    try {
-									zk.create(
-									    myPath,         	   // Path of znode
-									    null,           	   // Data not needed.
-									    Ids.OPEN_ACL_UNSAFE,   // ACL, set to Completely Open.
-									    CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL for failure detection
-									);
-				                	isPrimary = true;
-									nodeDeadSignal.countDown();
-								} catch (NodeExistsException e) {
-									logger.severe("Primary node is not yet dead");
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-									System.exit(-1);
-								} catch (KeeperException e) {
-									// TODO Auto-generated catch block
-									logger.severe(e.getMessage());
-									e.printStackTrace();
-								} catch (InterruptedException e) {
-									// TODO Auto-generated catch block
-									logger.severe(e.getMessage());
-						            System.exit(-1);
-								}
-			                }
-			            }
-			        });
-			} catch (KeeperException | InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-        	
-            System.out.println(e.code());
-        } catch(Exception e) {
-        	logger.severe(e.getMessage());
-        }
-        
-        if (!isPrimary){
-        	logger.info("Backup JobTracker started -- watching primary");
-            try{
-            	nodeDeadSignal.await();
-            } catch(Exception e) {
-            	logger.severe(e.getMessage());
-            }
-        }
+        // Affirm leadership
+        affirmPrimary();
         
     	ServerSocket serverSocket = new ServerSocket(8888);
+    	
     	if (MOCK){
-    		createJob("ABCDEFG");
+    		// this is the MD5 hash for ABC
+    		String mockHash = "902fbdd2b1df0c4f70b4a5d23525e932";
+    		
+    		createJob(mockHash);
+    		
+    		try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    		
+    		checkProgress(mockHash);
     	}
     	
         while (true){
@@ -131,23 +67,45 @@ public class JobTracker {
         	createJob(md5_hash);
         	
         	// TODO: tell user the job has been submitted
+        	// TODO: check status!!
         	clientSocket.close();
         }
         
     }
     
+    public static String checkProgress(String md5Hash){
+    	List<String> allJobs = zkc.getChildren(jobBasePath, null);
+    	int processedJobCount = 0;
+    	for (String job: allJobs){
+    		if (!job.startsWith(md5Hash)){
+    			continue;
+    		}
+    		String jobFullPath = jobBasePath + "/" + job;
+    		String jobStatus = new String(zkc.getData(jobFullPath, null));
+    		if (jobStatus.startsWith("FOUND")){
+    			logger.info("Hash " + md5Hash + " has been cracked with status: " + jobStatus);
+    			return jobStatus;
+    		}else if (jobStatus.equals("NOT_FOUND")){
+    			processedJobCount ++;
+    		}
+    	}
+    	logger.info("Job " + md5Hash + " progress: " + processedJobCount + "/" + nPartitions);
+    	return processedJobCount + "/" + nPartitions;
+    }
+
+    
     public static void createBaseZNode(){
     	// we would like to first create /Jobs node
 		try {
 			zk.create(
-			        jobPath,         	    // Path of znode
+			        jobBasePath,         	    // Path of znode
 			        null,   // Status is CREATED
 			        Ids.OPEN_ACL_UNSAFE,    // ACL, set to Completely Open.
 			        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL for failure detection
 			);
-			logger.info("Created node " + jobPath);
+			logger.info("Created node " + jobBasePath);
 		} catch (KeeperException | InterruptedException e) {
-			logger.info("Node " + jobPath + " already exists");
+			logger.info("Node " + jobBasePath + " already exists");
 		}
     }
     
@@ -156,7 +114,7 @@ public class JobTracker {
 	        try {
 	        	
 	        	// create N jobs under /<jobPath>/<md5_hash>_<partitionID>
-	        	String md5Path = jobPath + "/" + md5Hash + "_" + partitionID;
+	        	String md5Path = jobBasePath + "/" + md5Hash + "_" + partitionID;
 	        	logger.info("Creating node at " + md5Path);
 				zk.create(
 				        md5Path,         	    // Path of znode

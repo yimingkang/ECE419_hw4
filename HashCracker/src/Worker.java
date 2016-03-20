@@ -1,3 +1,7 @@
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -73,17 +77,26 @@ public class Worker {
 	        	logger.severe("Task name could not be understood: " + task);
 	        }
 	        
-	        String md5Hash = taskAttr[0];
+	        String target = taskAttr[0];
 	        String partitionID = taskAttr[1];
+	        ArrayList<String> partition = null;
 	        
+	        if (MOCK){
+	        	partition = new ArrayList<String>();
+	        	partition.add("ABC");  // Correct
+	        	partition.add("BCD");  // Wrong
+	        	partition.add("CDE");  // Wrong
+	        }
 	        
-	        // Fetch dictionary
-	        // logger.info("Attacking MD5 hash: " + md5Hash + " in partionID: " + partitionID);
+	        // TODO: Fetch dictionary
+	        // partition = getDictionaryPartition(partitionID);
+	        logger.info("Attacking MD5 hash: " + target + " in partionID: " + partitionID);
 	        
-	        // HULK SMASH
+	        // TODO: HULK SMASH
+	        String status = crackMD5(partition, target);
 	        
 	        // Update task
-	        updateTask(task, "FOUND");
+	        updateTask(task, status);
 	        
 	        if(MOCK){
 	        	logger.info("MOCK is on -- sleeping for 5s");
@@ -95,6 +108,25 @@ public class Worker {
 				}
 	        }
         }
+	}
+	public static String crackMD5(List<String> partition, String target){
+		for (String password: partition){
+			// brute-force all dict words
+	        try {
+	            MessageDigest md5 = MessageDigest.getInstance("MD5");
+	            BigInteger hashint = new BigInteger(1, md5.digest(password.getBytes()));
+	            String hash = hashint.toString(16);
+	            while (hash.length() < 32) hash = "0" + hash;
+	            if (hash.equals(target)){
+	            	logger.info("Found pwd " + password + " that generates hash " + target);
+	            	return "FOUND_" + password;
+	            }
+	        } catch (NoSuchAlgorithmException nsae) {
+	        	logger.severe("No MD5 algo found -- exiting");
+	        	System.exit(-1);
+	        }
+		}
+		return "NOT_FOUND";
 	}
 	
     public static void createBaseZNode(){

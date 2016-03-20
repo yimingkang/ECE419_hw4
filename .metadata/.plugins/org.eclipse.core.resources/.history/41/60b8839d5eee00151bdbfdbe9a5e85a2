@@ -1,0 +1,7 @@
+import java.util.concurrent.CountDownLatch;
+
+public class PBArchitecture {
+    public static String myPath;
+    public static boolean isPrimary;
+    public static CountDownLatch nodeDeadSignal = new CountDownLatch(1);
+}

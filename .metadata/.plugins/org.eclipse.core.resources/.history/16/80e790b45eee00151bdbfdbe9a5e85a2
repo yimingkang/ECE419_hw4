@@ -1,0 +1,10 @@
+import java.util.concurrent.CountDownLatch;
+import java.util.logging.Logger;
+
+public class PBArchitecture {
+    public static String myPath;
+    public static boolean isPrimary;
+    public static CountDownLatch nodeDeadSignal;
+	private static final Logger logger = Logger.getLogger(JobTracker.class.getName());
+
+}

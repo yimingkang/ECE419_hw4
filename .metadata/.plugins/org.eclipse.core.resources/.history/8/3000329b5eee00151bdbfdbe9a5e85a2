@@ -1,0 +1,4 @@
+
+public class PBArchitecture {
+    public static String myPath;
+}

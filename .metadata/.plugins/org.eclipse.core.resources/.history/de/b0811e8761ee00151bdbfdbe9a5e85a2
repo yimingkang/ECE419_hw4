@@ -1,0 +1,31 @@
+import java.io.IOException;
+import java.util.logging.Logger;
+
+public class FileServer extends PBArchitecture {
+	private static int nPartitions = 27;
+	private static int partitionSize = 10000;
+	public static boolean MOCK = true;	
+	public static String[] dictionary;
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+    	
+        pbPath = "/FileServer";
+        logger = Logger.getLogger(JobTracker.class.getName());
+    	
+        if (args.length != 1) {
+            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. A zkServer:clientPort");
+            return;
+        }
+        
+        // Connect to ZooKeeper and affirm leadership
+        connectZK(args[0]);
+        affirmPrimary();
+        
+        // Wait for connection
+    }
+    
+    public static void loadDictionary(String path){
+    	dictionary
+    }
+
+}
