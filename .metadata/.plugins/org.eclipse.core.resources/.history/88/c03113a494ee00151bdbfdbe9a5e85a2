@@ -1,0 +1,79 @@
+import java.nio.ByteBuffer;
+import java.util.logging.Logger;
+
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+
+public class ClientDriver {
+	public static Logger logger;
+    public static ZooKeeper zk;
+    public static ZkConnector zkc;
+    public static String jobTrackerPath = "/JobTracker";
+    public static int jobTrackerPort = -1;
+    public static Watcher jobTrackerWatcher;
+    
+    public static void main(String[] args){
+        if (args.length != 3) {
+            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. A zkServer:clientPort");
+            return;
+        }
+        // connect to zookeeper
+        zkConnect(args[0]);
+        
+        jobTrackerWatcher = new Watcher() { // Anonymous Watcher
+            @Override
+            public void process(WatchedEvent event) {
+                trackerHandler(event);
+            }
+        };
+        
+        
+    }
+    
+    public static void trackerHandler(WatchedEvent event){
+    	String eventPath = event.getType().equals(EventType.NodeDeleted);
+    }
+    
+    public static void getJobTrackerPort(){
+    	while (true){
+	    	try {
+				byte[] trackerData = zk.getData(jobTrackerPath, jobTrackerWatcher, null);
+				jobTrackerPort = ByteBuffer.wrap(trackerData).getInt();
+				logger.info("JobTracker is at port " + jobTrackerPort);
+				return;
+			} catch (KeeperException e) {
+				if (e.code().equals(Code.NONODE)){
+					logger.info("Client is waiting for JobTracker to start...");
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					continue;
+				}
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    	
+    }
+    
+    public static void zkConnect(String hostPort){
+        logger = Logger.getLogger(JobTracker.class.getName());
+        zkc = new ZkConnector();
+        
+        try {
+            zkc.connect(hostPort);
+        } catch(Exception e) {
+            logger.info("Zookeeper connect "+ e.getMessage());
+            System.exit(-1);
+        }
+        zk = zkc.getZooKeeper();
+    }
+}

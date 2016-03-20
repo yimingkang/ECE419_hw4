@@ -7,8 +7,10 @@ import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
@@ -20,9 +22,9 @@ import org.apache.zookeeper.ZooDefs.Ids;
 public class JobTracker extends PBArchitecture {
     public static String jobBasePath = "/Jobs";
 	private static int nPartitions = 27;
-	public static boolean MOCK = true;	
+	public static boolean MOCK = false;	
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
+    public static void main(String[] args) throws ClassNotFoundException, IOException {
     	
         pbPath = "/JobTracker";
         logger = Logger.getLogger(JobTracker.class.getName());
@@ -34,14 +36,26 @@ public class JobTracker extends PBArchitecture {
         // Connect ZooKeeper
         connectZK(args[0]);
         
+        
         // Create base node
         createBaseZNode();
         
-        // Affirm leadership
-        affirmPrimary();
-        
-    	ServerSocket serverSocket = new ServerSocket(8888);
+        // Create server socket
+    	ServerSocket serverSocket = null;
     	
+    	while (serverSocket == null){
+    		try {
+				serverSocket = new ServerSocket(serverPort);
+			} catch (IOException e) {
+				// keep incrementing serverPort until one is available
+				serverPort++;
+			}
+    	}
+
+        
+        // Affirm leadership (serverPort MUST be confirmed by this point)
+        affirmPrimary();
+            	
     	if (MOCK){
     		// this is the MD5 hash for ABC
     		String mockHash = "902fbdd2b1df0c4f70b4a5d23525e932";
@@ -59,16 +73,34 @@ public class JobTracker extends PBArchitecture {
     	}
     	
         while (true){
-        	Socket clientSocket = serverSocket.accept();
-        	ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
-        	String md5_hash = (String) reader.readObject();
-        	logger.info("Connected to a user with MD5 hash: " + md5_hash);
-        	// here we need to process the job
-        	createJob(md5_hash);
-        	
-        	// TODO: tell user the job has been submitted
-        	// TODO: check status!!
-        	clientSocket.close();
+        	try{
+	        	Socket clientSocket = serverSocket.accept();
+	        	logger.info("Connected to client!");
+	        	
+	        	ObjectOutputStream writer = new ObjectOutputStream(clientSocket.getOutputStream());
+	        	ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
+	
+	        	MPacket offerPacket = (MPacket) reader.readObject();
+	        	logger.info("User: " + offerPacket.md5Hash + " query: " + offerPacket.queryStatus);
+	        	
+	        	// here we need to process the job
+	        	if(offerPacket.queryStatus){
+	        		offerPacket.status = checkProgress(offerPacket.md5Hash);
+	        	}else{
+	            	createJob(offerPacket.md5Hash);
+	            	offerPacket.status = "OK";
+	        	}
+	        	
+	        	// send user response
+	        	writer.writeObject(offerPacket);
+	        	
+	        	// TODO: tell user the job has been submitted
+	        	// TODO: check status!!
+	        	clientSocket.close();
+        	} catch(IOException e){
+        		logger.info("Something happend to socket...continue");
+        		continue;
+        	}
         }
         
     }

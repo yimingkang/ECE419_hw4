@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/HashCracker/src/Worker.java"/>
+<listEntry value="/HashCracker/src/ClientDriver.java"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="1"/>
 </listAttribute>
 <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
-<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="Worker"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="localhost:7777"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="ClientDriver"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="localhost:7777 status 902fbdd2b1df0c4f70b4a5d23525e932"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="HashCracker"/>
 </launchConfiguration>

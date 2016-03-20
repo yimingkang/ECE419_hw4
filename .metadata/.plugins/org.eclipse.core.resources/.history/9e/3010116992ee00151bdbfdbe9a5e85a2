@@ -1,0 +1,34 @@
+import java.util.logging.Logger;
+
+import org.apache.zookeeper.ZooKeeper;
+
+public class ClientDriver {
+	public static Logger logger;
+    public static ZooKeeper zk;
+    public static ZkConnector zkc;
+    
+    public static void main(String[] args){
+        if (args.length != 1) {
+            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. A zkServer:clientPort");
+            return;
+        }
+        // connect to zookeeper
+        zkConnect(args[0]);
+        
+        
+    }
+    
+    
+    public static void zkConnect(String hostPort){
+        logger = Logger.getLogger(JobTracker.class.getName());
+        zkc = new ZkConnector();
+        
+        try {
+            zkc.connect(hostPort);
+        } catch(Exception e) {
+            logger.info("Zookeeper connect "+ e.getMessage());
+            System.exit(-1);
+        }
+        zk = zkc.getZooKeeper();
+    }
+}

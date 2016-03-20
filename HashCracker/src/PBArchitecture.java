@@ -1,3 +1,4 @@
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
@@ -17,6 +18,7 @@ public class PBArchitecture {
     protected static ZooKeeper zk;
     protected static ZkConnector zkc;
 	protected static Logger logger;
+	protected static int serverPort = 8000;
 
 	public static void connectZK(String hostAndPort){
         zkc = new ZkConnector();
@@ -35,14 +37,15 @@ public class PBArchitecture {
 
     	// this function will NOT return until we become the alpha
         try {
+        	byte[] serverPortByteArray = ByteBuffer.allocate(4).putInt(serverPort).array();
             zk.create(
                 pbPath,         	   // Path of znode
-                null,           	   // Data not needed.
+                serverPortByteArray,           	   // Data not needed.
                 Ids.OPEN_ACL_UNSAFE,   // ACL, set to Completely Open.
                 CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL for failure detection
             );
             isPrimary = true;
-            logger.info("Primary JobTracker started");
+            logger.info("Primary JobTracker started at port " + serverPort);
             
         } catch(NodeExistsException e) {
         	// here we create a wacher
@@ -59,11 +62,12 @@ public class PBArchitecture {
 			                // verify if this is the defined znode
 			                boolean isMyPath = event.getPath().equals(pbPath);
 			                if (isNodeDeleted && isMyPath) {
-			                	logger.info("Primary JobTracker has died, taking over as Primary");
+			                	logger.info("Primary JobTracker has died, taking over as Primary at " + serverPort);
+			                	byte[] serverPortByteArray = ByteBuffer.allocate(4).putInt(serverPort).array();
 			                    try {
 									zk.create(
 									    pbPath,         	   // Path of znode
-									    null,           	   // Data not needed.
+									    serverPortByteArray,           	   // Data not needed.
 									    Ids.OPEN_ACL_UNSAFE,   // ACL, set to Completely Open.
 									    CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL for failure detection
 									);

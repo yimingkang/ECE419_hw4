@@ -1,0 +1,10 @@
+import java.io.Serializable;
+
+public class MPacket implements Serializable {
+	public String md5Hash;
+	
+	public MPacket(String md5Hash, boolean queryStatus){
+		
+	}
+	
+}
