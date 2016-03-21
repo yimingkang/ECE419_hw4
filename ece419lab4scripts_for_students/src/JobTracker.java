@@ -132,7 +132,7 @@ public class JobTracker extends PBArchitecture {
     	}else if(totalCount == processedJobCount){
     		return "Password not found";
     	}else{
-    		return "In Progress";
+    		return "In progress";
     	}
     }
 

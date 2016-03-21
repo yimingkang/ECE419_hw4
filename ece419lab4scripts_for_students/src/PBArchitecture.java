@@ -33,7 +33,7 @@ public class PBArchitecture {
 	}
 	
     public static void affirmPrimary(){
-        CountDownLatch nodeDeadSignal = new CountDownLatch(1);
+        final CountDownLatch nodeDeadSignal = new CountDownLatch(1);
 
     	// this function will NOT return until we become the alpha
         try {

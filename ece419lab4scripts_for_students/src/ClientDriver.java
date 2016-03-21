@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -20,6 +21,7 @@ public class ClientDriver extends PBArchitectureAdaptor{
         
         pbPath = "/JobTracker";
         logger = Logger.getLogger(JobTracker.class.getName());
+        logger.setLevel(Level.OFF);
 
         connectZKAndSetupPB(args[0]);
         
@@ -34,8 +36,8 @@ public class ClientDriver extends PBArchitectureAdaptor{
     	if (status.startsWith("FOUND")){	
     		String password = status.split("_")[1];
     		System.out.println("Password found: " + password);
-    	}else if (status.equals("In Progress")){
-    		System.out.println("In Progress");
+    	}else if (status.equals("In progress")){
+    		System.out.println("In progress");
     	}else if (status.equals("OK")){
     		System.out.println("Submission OK");
     	}else{
