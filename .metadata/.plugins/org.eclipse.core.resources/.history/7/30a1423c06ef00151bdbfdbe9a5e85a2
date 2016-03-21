@@ -123,7 +123,7 @@ public class JobTracker extends PBArchitecture {
     			processedJobCount ++;
     		}
     	}
-    	logger.info("Job " + md5Hash + " progress: " + processedJobCount + "/" + totalCount);
+    	logger.info("Job " + md5Hash + " progress: " + processedJobCount + "/" + nPartitions);
     	
     	if(totalCount == 0){
     		return "Job not found";
@@ -134,6 +134,7 @@ public class JobTracker extends PBArchitecture {
     	}else{
     		return "In Progress";
     	}
+    	return "ERROR";
     }
 
     

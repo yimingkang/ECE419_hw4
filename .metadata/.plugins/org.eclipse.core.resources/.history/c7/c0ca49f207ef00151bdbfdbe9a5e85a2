@@ -32,7 +32,7 @@ public class ClientDriver extends PBArchitectureAdaptor{
     
     public static void parseStatus(String status){
     	if (status.startsWith("FOUND")){	
-    		String password = status.split("_")[1];
+    		String password = status.split("_")[-1];
     		System.out.println("Password found: " + password);
     	}else if (status.equals("In Progress")){
     		System.out.println("In Progress");

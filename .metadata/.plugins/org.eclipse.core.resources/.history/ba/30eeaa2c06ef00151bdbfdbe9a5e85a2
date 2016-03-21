@@ -123,8 +123,7 @@ public class JobTracker extends PBArchitecture {
     			processedJobCount ++;
     		}
     	}
-    	logger.info("Job " + md5Hash + " progress: " + processedJobCount + "/" + totalCount);
-    	
+    	logger.info("Job " + md5Hash + " progress: " + processedJobCount + "/" + nPartitions);
     	if(totalCount == 0){
     		return "Job not found";
     	}else if(totalCount != nPartitions){
@@ -132,7 +131,7 @@ public class JobTracker extends PBArchitecture {
     	}else if(totalCount == processedJobCount){
     		return "Password not found";
     	}else{
-    		return "In Progress";
+    		
     	}
     }
 
