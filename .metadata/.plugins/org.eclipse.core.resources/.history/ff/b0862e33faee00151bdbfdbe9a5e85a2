@@ -81,7 +81,7 @@ public class FileServer extends PBArchitecture {
     
     static List<String> getPartition(int partitionID){
     	int minLN = partitionID * partitionSize;
-    	int maxLN = Math.min((partitionID + 1) * partitionSize, dictionary.size());
+    	int maxLN = Math.max((partitionID + 1) * partitionSize, dictionary.size());
     	return new ArrayList<String>(dictionary.subList(minLN, maxLN));
     }
     

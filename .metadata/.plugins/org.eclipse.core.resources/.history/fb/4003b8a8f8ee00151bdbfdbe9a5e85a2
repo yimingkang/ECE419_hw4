@@ -45,7 +45,7 @@ public class PBArchitecture {
                 CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL for failure detection
             );
             isPrimary = true;
-            logger.info("Primary started at port " + serverPort);
+            logger.info("Primary JobTracker started at port " + serverPort);
             
         } catch(NodeExistsException e) {
         	// here we create a wacher
@@ -62,7 +62,7 @@ public class PBArchitecture {
 			                // verify if this is the defined znode
 			                boolean isMyPath = event.getPath().equals(pbPath);
 			                if (isNodeDeleted && isMyPath) {
-			                	logger.info("Primary has died, taking over as Primary at " + serverPort);
+			                	logger.info("Primary JobTracker has died, taking over as Primary at " + serverPort);
 			                	byte[] serverPortByteArray = ByteBuffer.allocate(4).putInt(serverPort).array();
 			                    try {
 									zk.create(
@@ -101,7 +101,7 @@ public class PBArchitecture {
         }
         
         if (!isPrimary){
-        	logger.info("Backup started -- watching primary");
+        	logger.info("Backup JobTracker started -- watching primary");
             try{
             	nodeDeadSignal.await();
             } catch(Exception e) {

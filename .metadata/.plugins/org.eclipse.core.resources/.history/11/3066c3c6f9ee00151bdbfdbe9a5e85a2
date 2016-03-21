@@ -11,6 +11,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 public class ClientDriver extends PBArchitectureAdaptor{
+	public static Logger logger;
     
     public static void main(String[] args){
         if (args.length != 3) {

@@ -19,7 +19,7 @@ public class Worker extends PBArchitectureAdaptor{
     public static String myPath;
     public static List<String> currentWorkers = null;
     private static Watcher workerWatcher;
-    public static boolean MOCK = false;
+    public static boolean MOCK = true;
     
 	
 	public static void main(String[] args){
@@ -81,9 +81,9 @@ public class Worker extends PBArchitectureAdaptor{
 	        // Update task
 	        updateTask(task, status);
 	        
-        	logger.info("Cracking again in 1s");
+        	logger.info("Cracking again in 5s");
         	try {
-				Thread.sleep(1000);
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

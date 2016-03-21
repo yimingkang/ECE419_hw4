@@ -74,6 +74,11 @@ public class PBArchitectureAdaptor {
     	while (true){
 	    	try {
 				byte[] trackerData = zk.getData(pbPath, pbWatcher, new Stat());
+				if (trackerData == null){
+					logger.severe("WTF?? NULL??");
+				}else{
+					logger.info("GOT: " + trackerData);
+				}
 				pbPort = ByteBuffer.wrap(trackerData).getInt();
 				logger.info("PB is at port " + pbPort);
 				return;
