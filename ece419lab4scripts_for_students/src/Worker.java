@@ -1,0 +1,248 @@
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooDefs.Ids;
+
+public class Worker extends PBArchitectureAdaptor{
+    public static String jobPath = "/Jobs";
+    public static String workerPath = "/Workers";
+    public static String myPath;
+    public static List<String> currentWorkers = null;
+    private static Watcher workerWatcher;
+    public static boolean MOCK = false;
+    
+	
+	public static void main(String[] args){
+        if (args.length != 1) {
+            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. A zkServer:clientPort");
+            return;
+        }
+        
+        // setup PB for file server
+        pbPath = "/FileServer";
+    	logger = Logger.getLogger(Worker.class.getName());
+    	connectZKAndSetupPB(args[0]);
+
+    	// in case base znode is not there, make it
+        createBaseZNode();
+        
+        // Set a watcher on workers
+        workerWatcher = new Watcher() { // Anonymous Watcher
+            @Override
+            public void process(WatchedEvent event) {
+                workerHandler(event);
+            }
+        };
+        
+        watchWorkers();
+        
+        // Register self on zookeeper
+        myPath = zkc.createWorker(workerPath + "/worker");
+        logger.info("This work's path is " + myPath);
+        
+        while(true){
+	        // now all we have to do is to actually dictionary attack it
+	        // task will be something like /Jobs/<md5>_<partitionID>
+	        String task = getTask();
+	        String[] taskAttr = task.split("_");
+	        
+	        if (taskAttr.length != 2){
+	        	logger.severe("Task name could not be understood: " + task);
+	        }
+	        
+	        String target = taskAttr[0];
+	        int partitionID = Integer.parseInt(taskAttr[1]);
+	        List<String> partition = null;
+	        logger.info("Attacking MD5 hash: " + target + " in partionID: " + partitionID);
+
+	        if (MOCK){
+	        	partition = new ArrayList<String>();
+	        	partition.add("ABC");  // Correct
+	        	partition.add("BCD");  // Wrong
+	        	partition.add("CDE");  // Wrong
+	        } else{
+				MPacket response = exchangeMPacket(new MPacket(partitionID));
+				partition = response.partition;
+	        }
+
+	        // TODO: HULK SMASH
+	        String status = crackMD5(partition, target);
+	        
+	        // Update task
+	        updateTask(task, status);
+	        
+        	logger.info("Cracking again in 1s");
+        	try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+	}
+	public static String crackMD5(List<String> partition, String target){
+		for (String password: partition){
+			// brute-force all dict words
+	        try {
+	            MessageDigest md5 = MessageDigest.getInstance("MD5");
+	            BigInteger hashint = new BigInteger(1, md5.digest(password.getBytes()));
+	            String hash = hashint.toString(16);
+	            while (hash.length() < 32) hash = "0" + hash;
+	            if (hash.equals(target)){
+	            	logger.info("Found pwd " + password + " that generates hash " + target);
+	            	return "FOUND_" + password;
+	            }
+	        } catch (NoSuchAlgorithmException nsae) {
+	        	logger.severe("No MD5 algo found -- exiting");
+	        	System.exit(-1);
+	        }
+		}
+		return "NOT_FOUND";
+	}
+	
+    public static void createBaseZNode(){
+    	// we would like to first create /Jobs node
+		try {
+			zk.create(
+			        workerPath,         	    // Path of znode
+			        null,   // Status is CREATED
+			        Ids.OPEN_ACL_UNSAFE,    // ACL, set to Completely Open.
+			        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL for failure detection
+			);
+			logger.info("Created node " + workerPath);
+		} catch (KeeperException | InterruptedException e) {
+			logger.info("Node " + workerPath + " already exists");
+		}
+    }
+	
+	private static void updateTask(String task, String taskStatusUpdate){
+		Stat taskStat = new Stat();
+		String taskPath = jobPath + "/" + task;
+		String taskStatus = new String(zkc.getData(taskPath, taskStat));
+		int taskVersion = taskStat.getVersion();
+		
+		if (taskStatus.equals(myPath)){
+			if(zkc.setData(taskPath, taskStatusUpdate.getBytes(), taskVersion)){
+				logger.info("Successfully updated task " + taskPath + " to " + taskStatusUpdate);
+			}else{
+				logger.severe("Unable to update task " + taskPath + ", exiting");
+				System.exit(-1);
+			}
+		}else{
+			logger.severe("Unexpected task data: " + taskStatus + ", exiting");
+			System.exit(-1);
+		}
+	}
+	
+	private static String getTask(){
+		/* Fetch a single task and set task's data to this worker's name
+		 * 
+		 */
+		while (true){
+			List<String> tasks = zkc.getChildren(jobPath, null);
+			if (tasks == null){
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					System.exit(-1);
+				}
+				continue;
+			}
+			for (String task: tasks){
+				// assemble full path
+				String taskPath = jobPath + "/" + task;
+				
+				Stat taskStat = new Stat();
+				String taskStatus = new String(zkc.getData(taskPath, taskStat));
+				// logger.info("Getting data at node " + taskPath + " with status " + taskStatus);
+
+				int taskVersion = taskStat.getVersion();
+				if (taskStatus.equals("CREATED")){
+					// Found a free tasks, go take it!!
+					if (zkc.setData(taskPath, myPath.getBytes(), taskVersion)){
+						logger.info("Assigning task: " + taskPath + " to self: " + myPath);
+						return task;
+					}
+				}
+			}
+			logger.info("Unable to find any available task, sleeping for 5s and trying again");
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.exit(-1);
+			}
+		}
+	}
+	
+	private static void watchWorkers(){
+        List<String> newWorkers = zkc.getChildren(workerPath, workerWatcher);
+        if (currentWorkers == null){
+        	// Initialize workers
+        	currentWorkers = newWorkers;
+            logger.info("Initial list of children: " + newWorkers.toString());
+        } else {
+        	handleWorkerDeath(newWorkers);
+        }
+	}
+	
+	private static void cleanUnfinishedTasks(String worker){
+		// If TASK's data == worker then set it to "CREATED"
+		// otherwise don't do anything
+		List<String> tasks = zkc.getChildren(jobPath, null);
+		
+		for(String task: tasks){
+			// clean up all tasks belonging to this worker
+			
+			Stat taskStat = new Stat();		
+			byte[] taskWorker = zkc.getData(task, taskStat);
+			int taskVersion = taskStat.getVersion();
+			
+			if (taskWorker != null && taskWorker.equals(worker)){
+				logger.info("Setting task " + task + " to CREATED (test_and_set)");
+				zkc.setData(task, "CREATED".getBytes(), taskVersion);
+			}
+		}
+	}
+	
+	private static void handleWorkerDeath(List<String> newWorkers){
+		logger.info("Current workers: " + currentWorkers + ", new workers: " + newWorkers);
+		for (String worker: currentWorkers){
+			if (!newWorkers.contains(worker)){
+				// previousWorker died (probably0
+				logger.warning("Worker " + worker + " has died, cleaning up its tasks");
+				cleanUnfinishedTasks(worker);
+			}
+		}
+		
+		// update our knowledge about current workers
+		currentWorkers = newWorkers;
+	}
+	
+	private static void workerHandler(WatchedEvent event){
+        String path = event.getPath();
+        EventType type = event.getType();
+                
+        if(path.equalsIgnoreCase(workerPath)) {
+            if (type == EventType.NodeChildrenChanged) {
+                watchWorkers();
+            }else{
+            	logger.info("Something unexpected happened to node " + workerPath + ", exiting");
+            	System.exit(-1);
+            }
+        }
+	}
+
+}
