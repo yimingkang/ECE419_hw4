@@ -81,13 +81,6 @@ public class Worker extends PBArchitectureAdaptor{
 	        // Update task
 	        updateTask(task, status);
 	        
-        	logger.info("Cracking again in 1s");
-        	try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
         }
 	}
 	public static String crackMD5(List<String> partition, String target){
