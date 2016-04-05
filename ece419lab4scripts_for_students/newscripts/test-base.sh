@@ -1,9 +1,9 @@
 #!/bin/bash
 
-ZK_SCRIPT=/homes/k/kangyimi/zookeeper/bin/zkServer.sh
+ZK_SCRIPT=/homes/w/wangze1/ECE419_hw4/zookeeper/bin/zkServer.sh
 ZK_DATADIR=/tmp/kangyimi/server1/data
 ZK_HOST=localhost
-ZK_PORT=5999
+ZK_PORT=8267
 
 TIMEOUT=240
 
